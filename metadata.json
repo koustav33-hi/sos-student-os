@@ -1,0 +1,7 @@
+{
+  "name": "SOS - Student Optimization System",
+  "description": "A minimal, distraction-free self-improvement app for students designed to build discipline and eliminate procrastation through a strict, coach-like interface.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
