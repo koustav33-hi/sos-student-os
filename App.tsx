@@ -86,6 +86,39 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(globalState));
   }, [globalState]);
 
+  // Daily Reset Check
+  useEffect(() => {
+    if (globalState.activeProfileId) {
+      const today = new Date().toDateString();
+      setGlobalState(prev => {
+        const userIndex = prev.profiles.findIndex(p => p.id === prev.activeProfileId);
+        if (userIndex === -1) return prev;
+        
+        const user = prev.profiles[userIndex];
+        if (user.lastCheckIn !== today) {
+          // Reset daily stats
+          const updatedUser: UserState = {
+            ...user,
+            lastCheckIn: today,
+            mainFocus: '',
+            coreObjectiveCompleted: false,
+            focusSessionsCompletedToday: 0,
+            warningSentToday: false,
+            // Keep daily tasks text but reset completion? Or clear? 
+            // "Objective should reset next day" implies mainFocus.
+            // Resetting task completion status for consistency.
+            dailyTasks: user.dailyTasks.map(t => ({ ...t, completed: false })),
+          };
+          
+          const newProfiles = [...prev.profiles];
+          newProfiles[userIndex] = updatedUser;
+          return { ...prev, profiles: newProfiles };
+        }
+        return prev;
+      });
+    }
+  }, [globalState.activeProfileId]); // Only check when active profile changes or on mount
+
   const activeUser = useMemo(() => {
     if (!globalState.activeProfileId) return createInitialState("guest");
     const found = globalState.profiles.find(p => p.id === globalState.activeProfileId);
@@ -103,7 +136,7 @@ const App: React.FC = () => {
     } else {
       setView('onboarding');
     }
-  }, [globalState.activeProfileId]); // removed isFocusLocked from dependency to prevent reset loops
+  }, [globalState.activeProfileId]); 
 
   const updateActiveUser = useCallback((updates: Partial<UserState>) => {
     if (!globalState.activeProfileId) return;

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UserState, AppView, PenaltyRecord, calculateDisciplineScore, DailyTask, InboxMessage } from '../types';
 import { getCoachGreeting } from '../constants';
 
@@ -12,7 +12,16 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ state, updateState, onViewChange }) => {
   const [secondaryInput, setSecondaryInput] = useState('');
   const [highlightPenalty, setHighlightPenalty] = useState(false);
+  
+  // Fix 1: Local state for input to prevent freezing on character entry
+  const [localMainFocus, setLocalMainFocus] = useState(state.mainFocus);
+  
   const penaltyRef = useRef<HTMLElement>(null);
+
+  // Sync local state if parent state changes (e.g. daily reset)
+  useEffect(() => {
+    setLocalMainFocus(state.mainFocus);
+  }, [state.mainFocus]);
 
   const today = new Date().toDateString();
   const todayRelapses = (state.dopamineRelapses[today] || []).length;
@@ -24,6 +33,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, updateState, onViewChange 
   const toggleCoreObjective = () => {
     if (!state.mainFocus) return;
     updateState({ coreObjectiveCompleted: !state.coreObjectiveCompleted });
+  };
+
+  const commitMainFocus = () => {
+    if (localMainFocus !== state.mainFocus) {
+      updateState({ mainFocus: localMainFocus, coreObjectiveCompleted: false });
+    }
   };
 
   const addSecondary = () => {
@@ -116,33 +131,66 @@ const Dashboard: React.FC<DashboardProps> = ({ state, updateState, onViewChange 
              )}
           </div>
           
-          {state.mainFocus ? (
+          {/* Display logic: If completed, show text. If not completed, show input. */}
+          {state.mainFocus && state.coreObjectiveCompleted ? (
             <div className="space-y-6">
-              <p className={`text-lg font-medium mono leading-relaxed transition-all ${state.coreObjectiveCompleted ? 'text-green-500/50 line-through' : 'text-white'}`}>
+              <p className={`text-lg font-medium mono leading-relaxed transition-all text-green-500/50 line-through`}>
                 {state.mainFocus}
               </p>
               <button 
                 onClick={toggleCoreObjective}
-                className={`w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 ${
-                  state.coreObjectiveCompleted 
-                  ? 'bg-neutral-900 text-neutral-600 border border-neutral-800 hover:text-white' 
-                  : 'bg-green-600 text-black shadow-[0_0_20px_rgba(22,163,74,0.2)] hover:bg-green-500'
-                }`}
+                className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 bg-neutral-900 text-neutral-600 border border-neutral-800 hover:text-white"
               >
-                {state.coreObjectiveCompleted ? 'Undo Status' : 'Mark Executed'}
+                Undo Status
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <input 
-                type="text" 
-                placeholder="Define today's singular focus..." 
-                className="w-full bg-black/50 border border-neutral-800 p-4 rounded-xl text-white placeholder:text-neutral-700 focus:border-green-600/50 outline-none transition-all text-sm font-medium mono" 
-                value={state.mainFocus} 
-                onChange={(e) => updateState({ mainFocus: e.target.value, coreObjectiveCompleted: false })} 
-                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-              />
-              <p className="text-[9px] text-neutral-600 uppercase tracking-wide px-1">Commit to one absolute task.</p>
+            <div className="space-y-6">
+               {/* Input Mode */}
+               {state.mainFocus && !state.coreObjectiveCompleted ? (
+                   // If focus is set but not completed, allow editing but also show Mark Executed
+                   <div className="space-y-6">
+                     <input 
+                        type="text" 
+                        placeholder="Define today's singular focus..." 
+                        className="w-full bg-black/50 border border-neutral-800 p-4 rounded-xl text-white placeholder:text-neutral-700 focus:border-green-600/50 outline-none transition-all text-sm font-medium mono" 
+                        value={localMainFocus} 
+                        onChange={(e) => setLocalMainFocus(e.target.value)} 
+                        onBlur={commitMainFocus}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                commitMainFocus();
+                                e.currentTarget.blur();
+                            }
+                        }}
+                      />
+                      <button 
+                        onClick={toggleCoreObjective}
+                        className="w-full py-4 rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 bg-green-600 text-black shadow-[0_0_20px_rgba(22,163,74,0.2)] hover:bg-green-500"
+                      >
+                        Mark Executed
+                      </button>
+                   </div>
+               ) : (
+                  // If no focus set
+                   <div className="space-y-4">
+                      <input 
+                        type="text" 
+                        placeholder="Define today's singular focus..." 
+                        className="w-full bg-black/50 border border-neutral-800 p-4 rounded-xl text-white placeholder:text-neutral-700 focus:border-green-600/50 outline-none transition-all text-sm font-medium mono" 
+                        value={localMainFocus} 
+                        onChange={(e) => setLocalMainFocus(e.target.value)} 
+                        onBlur={commitMainFocus}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                commitMainFocus();
+                                e.currentTarget.blur();
+                            }
+                        }}
+                      />
+                      <p className="text-[9px] text-neutral-600 uppercase tracking-wide px-1">Commit to one absolute task.</p>
+                   </div>
+               )}
             </div>
           )}
         </div>

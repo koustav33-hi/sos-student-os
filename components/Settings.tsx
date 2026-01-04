@@ -109,9 +109,10 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, setView, handle
          </div>
       </section>
 
-      {/* Toggles */}
-      <section className="space-y-3">
-        <h3 className="text-[10px] text-neutral-600 uppercase font-black tracking-widest px-2">Notifications</h3>
+      {/* Toggles - Disabled/Hidden for now */}
+      {/* 
+      <section className="space-y-3 opacity-50 pointer-events-none grayscale">
+        <h3 className="text-[10px] text-neutral-600 uppercase font-black tracking-widest px-2">Notifications (Offline)</h3>
         <div className="bg-[#0f0f0f] rounded-3xl border border-neutral-800 overflow-hidden">
           {(Object.keys(state.notifications) as Array<keyof NotificationSettings>).map((key, idx) => (
             <div 
@@ -127,6 +128,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, setView, handle
           ))}
         </div>
       </section>
+      */}
 
       {/* Data Control */}
       <section className="space-y-3">

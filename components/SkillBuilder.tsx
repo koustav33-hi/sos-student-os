@@ -21,15 +21,35 @@ const SkillBuilder: React.FC<SkillProps> = ({ state, updateState }) => {
   const getDailyTask = async () => {
     if (!state.selectedSkill) return;
     setLoading(true);
-    const task = await generateMicroTask(state.selectedSkill);
-    updateState({
-      skillProgress: {
-        name: state.selectedSkill,
-        currentTask: task,
-        generatedDate: new Date().toDateString()
-      }
-    });
-    setLoading(false);
+    try {
+      // Add timeout race to prevent infinite loading
+      const timeoutPromise = new Promise<string>((resolve) => 
+        setTimeout(() => resolve("Execute a 45-minute focused session on the core basics."), 8000)
+      );
+      
+      const taskPromise = generateMicroTask(state.selectedSkill);
+      const task = await Promise.race([taskPromise, timeoutPromise]);
+      
+      updateState({
+        skillProgress: {
+          name: state.selectedSkill,
+          currentTask: task || "Practice your skill for 30 minutes with zero distractions.",
+          generatedDate: new Date().toDateString()
+        }
+      });
+    } catch (e) {
+      console.error("Task generation failed", e);
+      // Fallback
+      updateState({
+        skillProgress: {
+          name: state.selectedSkill,
+          currentTask: "Execute a 45-minute deep work session on your skill.",
+          generatedDate: new Date().toDateString()
+        }
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const hasTaskToday = state.skillProgress?.generatedDate === new Date().toDateString();
